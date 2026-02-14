@@ -1,5 +1,5 @@
 .vscode/
-__pycache__/
+canera_perception/__pycache__/
 *.pyc
 *.pyo
 *.egg-info/
