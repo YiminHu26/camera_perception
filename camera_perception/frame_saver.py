@@ -38,9 +38,11 @@ class FrameSaver(AIRNode):
             scale=1000.0
         )
 
+        H, W = depth_image.shape[:2]
         pcd = create_point_cloud_from_depth_image(
-            depth_image, camera, organized=True
-        ).reshape(-1,3)
+            depth_image, camera, organized=False
+        )
+
         self.get_logger().info(f"Shape of pcd: {pcd.shape}")
 
         t = self.tf_buffer.lookup_transform(
@@ -49,7 +51,8 @@ class FrameSaver(AIRNode):
             rclpy.time.Time()
         )
 
-        pcd_base = transform_points(pcd, t.transform)
+        pcd_base = transform_points(pcd, t.transform).reshape(H, W, 3)
+        self.get_logger().info(f"Shape of pcd_base: {pcd_base.shape}")
 
         timestamp = f"{msg.header.stamp.sec}_{msg.header.stamp.nanosec:09d}"
         file_path = Path(f"vmf_input_{timestamp}.pt")
