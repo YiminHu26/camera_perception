@@ -8,6 +8,10 @@ from .utils_camera import *
 from .utils_node import *
 
 class FrameSaver(AIRNode):
+    '''
+    A ROS2 node that subscribes to a depth image topic, converts the depth image to a point cloud,
+    transforms the point cloud to the base_link frame, and saves it as a .pt file (numpy.ndarray ).
+    '''
 
     def __init__(self):
         super().__init__("frame_saver")
@@ -26,7 +30,8 @@ class FrameSaver(AIRNode):
     def depth_callback(self, msg):
         self.get_logger().info("Depth frame received")
 
-        depth_image = self.bridge.imgmsg_to_cv2(msg)
+        # depth_image = self.bridge.imgmsg_to_cv2(msg)
+        depth_image = self.last_depth_msg
 
         camera = CameraInfo(
             width=self.image_width,
@@ -51,7 +56,8 @@ class FrameSaver(AIRNode):
             rclpy.time.Time()
         )
 
-        pcd_base = transform_points(pcd, t.transform).reshape(H, W, 3)
+        # pcd_base = transform_points(pcd, t.transform).reshape(H, W, 3)
+        pcd_base = transform_points(pcd, t.transform)
         self.get_logger().info(f"Shape of pcd_base: {pcd_base.shape}")
 
         timestamp = f"{msg.header.stamp.sec}_{msg.header.stamp.nanosec:09d}"
