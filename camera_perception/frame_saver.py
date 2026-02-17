@@ -29,9 +29,13 @@ class FrameSaver(AIRNode):
 
     def depth_callback(self, msg):
         self.get_logger().info("Depth frame received")
+        timestamp = f"{msg.header.stamp.sec}_{msg.header.stamp.nanosec:09d}"
 
         # depth_image = self.bridge.imgmsg_to_cv2(msg)
         depth_image = self.last_depth_msg
+        self.get_logger().info(f"Shape of the depth image: {depth_image.shape}")
+        # self.get_logger().info(f"10 Lines in the msg\n {depth_image[100:110]}")
+        # self._save_frame(depth_image, surfix=f"depth_{timestamp}")
 
         camera = CameraInfo(
             width=self.image_width,
@@ -47,27 +51,54 @@ class FrameSaver(AIRNode):
         pcd = create_point_cloud_from_depth_image(
             depth_image, camera, organized=False
         )
+        pcd = self._resample_pointcloud(pcd, target_points=20000)
 
         self.get_logger().info(f"Shape of pcd: {pcd.shape}")
+        # self.get_logger().info(f"10 Lines in the pcd\n {pcd[100:110]}")
+        # self._save_frame(pcd, surfix=f"pcd_{timestamp}")
+
 
         t = self.tf_buffer.lookup_transform(
             "base_link",
             "orbbec_femto_mega_link",
             rclpy.time.Time()
         )
+        self.get_logger().info(f"Transform:\n{t}")
 
         # pcd_base = transform_points(pcd, t.transform).reshape(H, W, 3)
         pcd_base = transform_points(pcd, t.transform)
         self.get_logger().info(f"Shape of pcd_base: {pcd_base.shape}")
+        # self.get_logger().info(f"10 Lines in the pcd_base\n {pcd_base[100:110]}")
+        self._save_frame(pcd_base, surfix=f"pcd_base_{timestamp}")
 
-        timestamp = f"{msg.header.stamp.sec}_{msg.header.stamp.nanosec:09d}"
-        file_path = Path(f"vmf_input_{timestamp}.pt")
+        # file_path = Path(f"vmf_input_{timestamp}.pt")
 
-        tensor = torch.from_numpy(pcd_base).float()
+        # tensor = torch.from_numpy(pcd_base).float()
+        # torch.save(tensor, file_path)
+
+        # self.get_logger().info(f"Saved {file_path}")
+
+        self.get_logger().info("Finished")
+        rclpy.shutdown()
+
+    def _resample_pointcloud(self, pcd: np.ndarray, target_points: int = 20000) -> np.ndarray:
+        num_points = pcd.shape[0]
+        if num_points == target_points:
+            return pcd
+
+        replace = num_points < target_points
+        sampled_indices = np.random.choice(num_points, size=target_points, replace=replace)
+        return pcd[sampled_indices]
+    
+    def _save_frame(self, pcd: np.ndarray, surfix=""):
+        file_path = Path(f"vmf_input_{surfix}.pt")
+
+        # file_path = Path(f"vmf_input_pcd_camera.pt")
+
+        tensor = torch.from_numpy(pcd).float()
         torch.save(tensor, file_path)
 
         self.get_logger().info(f"Saved {file_path}")
-        rclpy.shutdown()
 
 def main(args=None):
     rclpy.init(args=args)

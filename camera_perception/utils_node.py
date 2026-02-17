@@ -299,6 +299,8 @@ def transform_points(
             transform.rotation.y,
             transform.rotation.z
         ]))
+    
+    # print(transform_rotation_matrix)
 
     # "Batched" matmul meaning a matmul for each point
     # First we offset all points by the translation part
