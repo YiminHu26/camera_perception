@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             "frame_saver = camera_perception.frame_saver:main",
             "depth_viewer = camera_perception.test_depth_view:main",
+            "execution = camera_perception.test_execution:main",
         ],
     },
 )
