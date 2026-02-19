@@ -51,7 +51,7 @@ class FrameSaver(AIRNode):
         pcd = create_point_cloud_from_depth_image(
             depth_image, camera, organized=False
         )
-        pcd = self._resample_pointcloud(pcd, target_points=20000)
+        pcd = self._resample_pointcloud(pcd, target_points=40000)
 
         self.get_logger().info(f"Shape of pcd: {pcd.shape}")
         # self.get_logger().info(f"10 Lines in the pcd\n {pcd[100:110]}")
