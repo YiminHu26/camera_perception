@@ -51,7 +51,7 @@ class FrameSaver(AIRNode):
         pcd = create_point_cloud_from_depth_image(
             depth_image, camera, organized=False
         )
-        pcd = self._resample_pointcloud(pcd, target_points=40000)
+        pcd = self._resample_pointcloud(pcd, target_points=240000)
 
         self.get_logger().info(f"Shape of pcd: {pcd.shape}")
         # self.get_logger().info(f"10 Lines in the pcd\n {pcd[100:110]}")
@@ -81,7 +81,7 @@ class FrameSaver(AIRNode):
         self.get_logger().info("Finished")
         rclpy.shutdown()
 
-    def _resample_pointcloud(self, pcd: np.ndarray, target_points: int = 20000) -> np.ndarray:
+    def _resample_pointcloud(self, pcd: np.ndarray, target_points: int = 40000) -> np.ndarray:
         num_points = pcd.shape[0]
         if num_points == target_points:
             return pcd

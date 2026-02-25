@@ -29,29 +29,35 @@ class Execution(AIRNode):
         while True:
             user_input = input("Enter 's' to start next capture and 'q' to quit: ")
             if user_input == "s":
-                pose_chosen = np.array([[-0.9209464,   0.14233127, 0.36276636, -0.08807984],
-                                    [ 0.03427862,  0.9568921,  -0.2884139,   0.19987226],
-                                    [-0.3881786,  -0.25317866, -0.88612527,  0.05802576],
-                                    [ 0.          ,  0.          ,  0.          ,  1.        ]])
+                pose_chosen = np.array([[ 0.8473512,   0.2894231,  -0.44523045,  0.05596709],
+                                        [ 0.52747047, -0.55567735,  0.6426489,   0.02661008],
+                                        [-0.06140707, -0.7793952,  -0.623516,    0.10447411],
+                                        [ 0.          ,  0.          ,  0.          ,  1.        ]])
+
                 quat = quaternion_from_matrix(pose_chosen)
                 translation = translation_from_matrix(pose_chosen)
                 print("Chosen quaternion: ", quat)
+                print("Chosen translation: ", translation)
 
                 pose_chosen = np.concatenate([translation, quat])
                 print("Chosen pose: ", pose_chosen)
 
-                if pose_chosen is not None:
-                    pose = self.process_grasp(pose_chosen)
-                    success = self.execute_grasp(pose)
-                else:
-                    print("No grasp pose detected, please try again.")
+                # Chosen quaternion:  (-0.8698483506038269, -0.23478046215074366, 0.14561088760992308, 0.40870460109171164)
+                # Chosen translation:  [0.05596709, 0.02661008, 0.10447411]
+                # Chosen pose:  [ 0.05596709,  0.02661008,  0.10447411, -0.86984835, -0.23478046,  0.14561089,  0.4087046 ]
+
+                # if pose_chosen is not None:
+                #     pose = self.process_grasp(pose_chosen)
+                #     success = self.execute_grasp(pose)
+                # else:
+                #     print("No grasp pose detected, please try again.")
             elif user_input == "q":
                 self.shutdown = True
             break
 
-    def process_grasp(self, pose):
-        pose = list_to_pose(pose)
-        return pose
+    # def process_grasp(self, pose):
+    #     pose = list_to_pose(pose)
+    #     return pose
     
 def main(args=None):
     # Boilerplate code.
