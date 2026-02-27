@@ -29,10 +29,11 @@ class Execution(AIRNode):
         while True:
             user_input = input("Enter 's' to start next capture and 'q' to quit: ")
             if user_input == "s":
-                pose_chosen = np.array([[ 0.8473512,   0.2894231,  -0.44523045,  0.05596709],
-                                        [ 0.52747047, -0.55567735,  0.6426489,   0.02661008],
-                                        [-0.06140707, -0.7793952,  -0.623516,    0.10447411],
+                pose_chosen = np.array([[-0.92025715, -0.30032972,  0.2508563,   0.01388752],
+                                        [-0.35248688,  0.91460925, -0.19809853, -0.7115265 ],
+                                        [-0.1699406,  -0.27072513, -0.94753796,  0.00827277],
                                         [ 0.          ,  0.          ,  0.          ,  1.        ]])
+
 
                 quat = quaternion_from_matrix(pose_chosen)
                 translation = translation_from_matrix(pose_chosen)
