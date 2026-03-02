@@ -10,7 +10,8 @@ import numpy as np
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1771519029_725381120.pt")
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772027191_314213888.pt") # 240000 low
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772027502_230915072.pt") # 40000 low
-pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772028331_672243968.pt") # 40000 high
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772028331_672243968.pt") # 40000 high
+pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772462174_661852928.pt") # 40000 front high
 
 print(pcd_base_torch.shape)
 
@@ -55,10 +56,13 @@ print(pcd_base_torch.shape)
 #                                          (pcd_base_processed_torch[:, 2] > 0.065) & (pcd_base_processed_torch[:, 2] < 0.5)] # 40000 & 240000 high
 
 pcd_base_processed_torch = pcd_base_torch.view(-1, 3)
-pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.5) & (pcd_base_processed_torch[:, 0] < 0.5) &
-                                         (pcd_base_processed_torch[:, 1] > -1.5) & (pcd_base_processed_torch[:, 1] < -0.5) &
-                                         (pcd_base_processed_torch[:, 2] > -0.05) & (pcd_base_processed_torch[:, 2] < 0.5)] # 40000 & 240000 high
+# pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.5) & (pcd_base_processed_torch[:, 0] < 0.5) &
+#                                          (pcd_base_processed_torch[:, 1] > -1.5) & (pcd_base_processed_torch[:, 1] < -0.5) &
+#                                          (pcd_base_processed_torch[:, 2] > -0.05) & (pcd_base_processed_torch[:, 2] < 0.5)] # 40000 & 240000 high
 
+pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -1.0) & (pcd_base_processed_torch[:, 0] < 0) &
+                                         (pcd_base_processed_torch[:, 1] > -0.5) & (pcd_base_processed_torch[:, 1] < 0.5) &
+                                         (pcd_base_processed_torch[:, 2] > 0.1) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 & 240000 high
 # Convert the tensor to a NumPy array
 # pcd_numpy = loaded_pcd_2.numpy().reshape(-1, 3) # original
 pcd_base_numpy = pcd_base_crop.numpy().reshape(-1, 3) # After processing with shift and resize

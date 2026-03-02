@@ -1,31 +1,214 @@
-ros2 run arm_api2_py arm_api2_client_example 
-[INFO] [1772030982.418745992] [my_node]: MyNode has been started
-[INFO] [1772030982.453158688] [my_node]: [ArmApi2Client] Initializing...
-[INFO] [1772030982.453885565] [my_node]: [ArmApi2Client] Waiting for action servers...
-[INFO] [1772030990.472698025] [my_node]: [ArmApi2Client] Action servers are available: [False, False, False, False]
-[INFO] [1772030990.474177988] [my_node]: [ArmApi2Client] Waiting for service servers...
-[INFO] [1772030998.490531603] [my_node]: [ArmApi2Client] Service servers are available: [False, False, False, False, True, True]
-Current pose:  geometry_msgs.msg.PoseStamped(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), pose=geometry_msgs.msg.Pose(position=geometry_msgs.msg.Point(x=0.0, y=0.0, z=0.0), orientation=geometry_msgs.msg.Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)))
-Select wheter to 
-                  - send [c]artesian, [j]oint_state or [p]ath goal, 
-                  - [go] open gripper, [gc] close gripper,
-                  - [sws] switch controller to servo, 
-                  - [swj] switch controller to joint control, 
-                  - [swc] switch controller to cartesian control, 
-                  - [l]eft twist movement, [r]ight twist movement, 
-                  - [1] base rotation ccw, [2] base rotation cw, 
-                   - [s]top movement, 
-                  - [pot] plan only true, [pof] plan only false, 
-                  - or anything else to end:
-c
-[INFO] [1772031040.508076242] [my_node]: [ArmApi2Client] set_vel_acc: Waiting for service server...
-[ERROR] [1772031042.513425463] [my_node]: [ArmApi2Client] set_vel_acc: service server not available
-[INFO] [1772031042.514924913] [my_node]: [ArmApi2Client] list_controllers: Waiting for service server...
-[INFO] [1772031042.516583986] [my_node]: [ArmApi2Client] list_controllers: request sent, waiting for response...
-[INFO] [1772031042.548402823] [my_node]: [ArmApi2Client] Available controllers: 6
-[INFO] [1772031042.549364844] [my_node]: [ArmApi2Client] Controller scaled_joint_trajectory_controller is already active
-[INFO] [1772031042.549962563] [my_node]: [ArmApi2Client] Controller forward_position_controller is already inactive
-[INFO] [1772031042.550518489] [my_node]: [ArmApi2Client] No controllers to switch
-[INFO] [1772031042.554867298] [my_node]: [ArmApi2Client] change_state: Waiting for service server...
-[ERROR] [1772031044.559718237] [my_node]: [ArmApi2Client] change_state: service server not available
-[INFO] [1772031044.561423583] [my_node]: [ArmApi2Client] Waiting for action server...
+#!/usr/bin/env python3
+
+import time
+import numpy as np
+import rclpy
+import threading
+from rclpy.node import Node
+from geometry_msgs.msg import PoseStamped, TwistStamped
+from sensor_msgs.msg import JointState
+from arm_api2_py.arm_api2_client import ArmApi2Client
+
+from scipy.spatial.transform import Rotation as R
+
+class ArmApi2ClientExample(Node):
+    
+    def __init__(self):
+        super().__init__('my_node')
+        self.get_logger().info('MyNode has been started')
+        self.arm_api2_client = ArmApi2Client(self)
+
+        # start the user input thread
+        self.user_input_thread = threading.Thread(target=self.user_input)  
+        self.user_input_thread.start()
+
+    def user_input(self):
+        
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = "base_link"
+        # goal_pose.pose.position.x = 0.01388752
+        # goal_pose.pose.position.y = -0.7115265
+        # goal_pose.pose.position.z = 0.00827277
+        # goal_pose.pose.orientation.x = -0.16783294
+        # goal_pose.pose.orientation.y = 0.97242021
+        # goal_pose.pose.orientation.z = -0.1205301
+        # goal_pose.pose.orientation.w = 0.10818288
+
+        # goal_pose.pose.position.x = 0.9970640871742227
+        # goal_pose.pose.position.y = 2.7014364739753853
+        # goal_pose.pose.position.z = 1.4092697855999983
+        # goal_pose.pose.orientation.x = 0.739896409190648
+        # goal_pose.pose.orientation.y = -0.5671409042980863
+        # goal_pose.pose.orientation.z = 0.28526433340971596
+        # goal_pose.pose.orientation.w = 0.2225505749780142
+
+        goal_pose.pose.position.x = -0.52425665
+        goal_pose.pose.position.y = 0.05535678
+        goal_pose.pose.position.z = 0.09503099
+        goal_pose.pose.orientation.x = -0.44377771
+        goal_pose.pose.orientation.y = -0.78049899
+        goal_pose.pose.orientation.z = 0.42518868
+        goal_pose.pose.orientation.w = 0.11444321
+
+
+        
+        
+
+
+        names =["shoulder_pan_joint","shoulder_lift_joint","elbow_joint","wrist_1_joint","wrist_2_joint","wrist_3_joint"]
+        positions = [0.0,-np.pi/2,-np.pi/2,-np.pi/2,np.pi/2,np.pi]
+        goal_joint = JointState()
+        goal_joint.name = names
+        goal_joint.position = positions
+
+        twist_stamped = TwistStamped()
+        twist_stamped.header.frame_id = "tcp"
+        twist_stamped.twist.linear.x = 0.0
+        twist_stamped.twist.linear.y = 0.0
+        twist_stamped.twist.linear.z = 0.0
+        twist_stamped.twist.angular.x = 0.0
+        twist_stamped.twist.angular.y = 0.0
+        twist_stamped.twist.angular.z = 0.0
+
+        time.sleep(1) # wait for current pose to be published
+
+        while True:
+
+            current_ee_pose = self.arm_api2_client.get_current_ee_pose()
+            print("Current pose: ", current_ee_pose)
+
+            print("Select wheter to \n\
+                  - send [c]artesian, [j]oint_state or [p]ath goal, \n\
+                  - [go] open gripper, [gc] close gripper,\n\
+                  - [sws] switch controller to servo, \n\
+                  - [swj] switch controller to joint control, \n\
+                  - [swc] switch controller to cartesian control, \n\
+                  - [l]eft twist movement, [r]ight twist movement, \n\
+                  - [1] base rotation ccw, [2] base rotation cw, \n \
+                  - [s]top movement, \n\
+                  - [pot] plan only true, [pof] plan only false, \n\
+                  - or anything else to end:")
+            
+            cmd = input()
+
+            if cmd == 'c':
+                #self.arm_api2_client.set_eelink("orbbec_base")
+                self.arm_api2_client.set_vel_acc(0.03, 0.03)
+                self.arm_api2_client.change_state_to_cartesian_ctl()
+                self.arm_api2_client.move_to_pose(goal_pose)
+
+            elif cmd == 'j':
+                self.arm_api2_client.set_vel_acc(0.2, 0.2)
+                self.arm_api2_client.change_state_to_joint_ctl()
+                self.arm_api2_client.move_to_joint(goal_joint)
+            
+            elif cmd == 'p':
+                self.arm_api2_client.set_eelink("tcp")
+                current_pose = self.arm_api2_client.get_current_ee_pose()
+                path = create_sample_trajectory(self, current_pose)
+                self.arm_api2_client.change_state_to_cartesian_ctl()
+                self.arm_api2_client.move_to_pose_path(path)
+            
+            elif cmd == 'i':
+                self.arm_api2_client.change_state_to_servo_pos_ctl()
+                self.arm_api2_client.interpolate_to_pose(goal_pose, avg_speed=0.05, acceleration=0.1)
+            
+            elif cmd == 'go':
+                self.arm_api2_client.send_gripper_command(0.0, 100.0) # open gripper #2f140
+                # self.arm_api2_client.gripper_open() #2f85
+
+            elif cmd == 'gc':
+                self.arm_api2_client.send_gripper_command(0.69, 100.0) # close gripper # 2f140
+                # self.arm_api2_client.gripper_close() #2f85
+            
+            elif cmd == 'sws':
+                self.arm_api2_client.change_state_to_servo_ctl()
+            
+            elif cmd == 'swj':
+                self.arm_api2_client.change_state_to_joint_ctl()
+            
+            elif cmd == 'swc':
+                self.arm_api2_client.change_state_to_cartesian_ctl()
+            
+            elif cmd == 'l':
+                twist_stamped.twist.linear.y = 0.05
+                self.arm_api2_client.send_twist_cmd(twist_stamped)
+            
+            elif cmd == 'r':
+                twist_stamped.twist.linear.y = -0.05
+                self.arm_api2_client.send_twist_cmd(twist_stamped)
+            
+            elif cmd == 's':
+                twist_stamped.twist.linear.y = 0.0
+                self.arm_api2_client.send_twist_cmd(twist_stamped)
+                vels = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+                self.arm_api2_client.send_joint_vel_cmd(joint_names=names, joint_velocities=vels)
+            
+            elif cmd == 'pot':
+                self.arm_api2_client.set_planonly(True)
+            
+            elif cmd == 'pof':
+                self.arm_api2_client.set_planonly(False)
+            
+            elif cmd == '1':
+                vels = [0.2, 0.0, 0.0, 0.0, 0.0, 0.0]
+                self.arm_api2_client.send_joint_vel_cmd(joint_names=names, joint_velocities=vels)
+            
+            elif cmd == '2':
+                vels = [-0.2, 0.0, 0.0, 0.0, 0.0, 0.0]
+                self.arm_api2_client.send_joint_vel_cmd(joint_names=names, joint_velocities=vels)
+                
+            elif cmd == 'pg':
+                print("Publishing gripper command without waiting for result")
+                self.arm_api2_client.send_gripper_command(0.5, 100.0, wait_for_result=False)
+            
+
+            else:
+                break;
+        rclpy.shutdown()
+
+def to_T(pose: PoseStamped):
+    T = np.eye(4)
+    T[:3, :3] = R.from_quat([pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w]).as_matrix()
+    T[:3, 3] = [pose.pose.position.x, pose.pose.position.y, pose.pose.position.z]
+    return T
+
+
+def create_sample_trajectory(self, ref_pose: PoseStamped):
+
+    data = [ # x, y, z
+            [0.0, 0.0, 0.0],
+            [0.1, 0.0, 0.0],
+            [0.1, 0.1, 0.0],
+            [0.0, 0.1, 0.0],
+            [0.0, 0.2, 0.0],
+            [0.1, 0.2, 0.0],
+            [0.0, 0.0, 0.0],]
+    path = []
+    for p in data:
+        ref_T = to_T(ref_pose)
+        p = np.array([p[0], p[1], p[2], 1])
+        p_ = np.matmul(ref_T, p)
+        r_ = R.from_matrix(ref_T[:3, :3])
+        quat = r_.as_quat()
+        rosp = PoseStamped()
+        rosp.header.frame_id = ref_pose.header.frame_id
+        rosp.pose.position.x = p_[0]
+        rosp.pose.position.y = p_[1]
+        rosp.pose.position.z = p_[2]
+        rosp.pose.orientation.x = quat[0]
+        rosp.pose.orientation.y = quat[1]
+        rosp.pose.orientation.z = quat[2]
+        rosp.pose.orientation.w = quat[3]
+        path.append(rosp)
+    return path
+
+def main(args=None):
+    rclpy.init(args=args)
+    
+    node = ArmApi2ClientExample()
+    
+    rclpy.spin(node)
+
+if __name__ == "__main__":
+    main()
