@@ -8,7 +8,7 @@ import numpy as np
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772636033_795956992.pt") # 40000 front high new 1
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772636072_130245888.pt") # 40000 front high new 2 horizontal
 pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772636177_373777920.pt") # 40000 front high new 3 vertical
-
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772719274_623702016.pt") # 40000 front low
 
 print(pcd_base_torch.shape)
 
@@ -31,17 +31,41 @@ print(pcd_base_torch.shape)
 # pcd_shift_base = (pcd_bounds_base[0] + pcd_bounds_base[1]) / 2 # Shift to center, half of sum should be in the center
 # pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0] # Should be equal to 1.0. Resize to fit in the range, difference between max and min should be the size of the range, and the point cloud will be normalized to fit in a unit cube of size 1x1x1 after this resizing.
 
-# pcd_base_processed_torch = (pcd_base_torch.view(-1, 3) - pcd_shift_base) / pcd_resize_base
+pcd_bounds_base=torch.tensor([[-1.0, -0.5, -0.4], [0.0, 0.5, 0.6]], dtype=torch.float32) # 40000 & 240000 front high new
+pcd_shift_base = (pcd_bounds_base[0] + pcd_bounds_base[1]) / 2 # Shift to center, half of sum should be in the center
+pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0] # Should be equal to 1.0. Resize to fit in the range, difference between max and min should be the size of the range, and the point cloud will be normalized to fit in a unit cube of size 1x1x1 after this resizing.
 
-pcd_base_processed_torch = pcd_base_torch.view(-1, 3)
+# pcd_bounds_base=torch.tensor([[-1.0, -0.5, -0.5], [0.0, 0.5, 0.5]], dtype=torch.float32) # 40000 & 240000 front low new
+# pcd_shift_base = (pcd_bounds_base[0] + pcd_bounds_base[1]) / 2 # Shift to center, half of sum should be in the center
+# pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0] # Should be equal to 1.0. Resize to fit in the range, difference between max and min should be the size of the range, and the point cloud will be normalized to fit in a unit cube of size 1x1x1 after this resizing.
+
+
+
+pcd_base_processed_torch = (pcd_base_torch.view(-1, 3) - pcd_shift_base) / pcd_resize_base
+
+# pcd_base_processed_torch = pcd_base_torch.view(-1, 3)
 # pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.5) & (pcd_base_processed_torch[:, 0] < 0.5) &
 #                                          (pcd_base_processed_torch[:, 1] > -1.5) & (pcd_base_processed_torch[:, 1] < -0.5) &
 #                                          (pcd_base_processed_torch[:, 2] > -0.05) & (pcd_base_processed_torch[:, 2] < 0.5)] # 40000 & 240000 high
 
 pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -1.5) & (pcd_base_processed_torch[:, 0] < 1.5) &
                                          (pcd_base_processed_torch[:, 1] > -0.5) & (pcd_base_processed_torch[:, 1] < 0.5) &
-                                         (pcd_base_processed_torch[:, 2] > 0.09) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high & new
+                                         (pcd_base_processed_torch[:, 2] > -0.01) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high & new, with bounds
 
+# pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -1.0) & (pcd_base_processed_torch[:, 0] < 0.5) &
+#                                          (pcd_base_processed_torch[:, 1] > -0.5) & (pcd_base_processed_torch[:, 1] < 0.5) &
+#                                          (pcd_base_processed_torch[:, 2] > 0.09) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high & new, without bounds
+
+# pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.5) & (pcd_base_processed_torch[:, 0] < 0.2) &
+#                                          (pcd_base_processed_torch[:, 1] > -0.5) & (pcd_base_processed_torch[:, 1] < 0.5) &
+#                                          (pcd_base_processed_torch[:, 2] > -0.05) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front low new, with bounds
+# pcd = pcd[(pcd[:, 0] > -1.5) & (pcd[:, 0] < 1.5)]
+        # pcd = pcd[(pcd[:, 1] > -0.5) & (pcd[:, 1] < 0.5)]
+        # pcd = pcd[(pcd[:, 2] > -0.05) & (pcd[:, 2] < 0.3)] # 40000 front low, without bounds
+        
+        # pcd = pcd[(pcd[:, 0] > -0.5) & (pcd[:, 0] < 0.5)]
+        # pcd = pcd[(pcd[:, 1] > -0.5) & (pcd[:, 1] < 0.5)]
+        # pcd = pcd[(pcd[:, 2] > -0.1) & (pcd[:, 2] < 0.3)] # 40000 front low, with bounds
 
 # Convert the tensor to a NumPy array
 # pcd_numpy = loaded_pcd_2.numpy().reshape(-1, 3) # original
