@@ -7,9 +7,14 @@ import numpy as np
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772462174_661852928.pt") # 40000 front high
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772636033_795956992.pt") # 40000 front high new 1
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772636072_130245888.pt") # 40000 front high new 2 horizontal
-pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772636177_373777920.pt") # 40000 front high new 3 vertical
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772636177_373777920.pt") # 40000 front high new 3 vertical
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772719274_623702016.pt") # 40000 front low
-
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1774369660_729328128.pt") # 40000 front high 20260324
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775134583_411764992.pt") # 40000 front distant high 2026402 1: rotated
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135733_593223936.pt") # 40000 front distant high 2026402 2: horizontal
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135987_676135936.pt") # 40000 front distant high 2026402 3: vertical
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136907_450576896.pt") # 40000 front distant high 2026402 4: vertical pose2
+pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136991_594053120.pt") # 40000 front distant high 2026402 5: rotated pose2
 print(pcd_base_torch.shape)
 
 # Base 2
@@ -31,15 +36,18 @@ print(pcd_base_torch.shape)
 # pcd_shift_base = (pcd_bounds_base[0] + pcd_bounds_base[1]) / 2 # Shift to center, half of sum should be in the center
 # pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0] # Should be equal to 1.0. Resize to fit in the range, difference between max and min should be the size of the range, and the point cloud will be normalized to fit in a unit cube of size 1x1x1 after this resizing.
 
-pcd_bounds_base=torch.tensor([[-1.0, -0.5, -0.4], [0.0, 0.5, 0.6]], dtype=torch.float32) # 40000 & 240000 front high new
-pcd_shift_base = (pcd_bounds_base[0] + pcd_bounds_base[1]) / 2 # Shift to center, half of sum should be in the center
-pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0] # Should be equal to 1.0. Resize to fit in the range, difference between max and min should be the size of the range, and the point cloud will be normalized to fit in a unit cube of size 1x1x1 after this resizing.
+# pcd_bounds_base=torch.tensor([[-1.0, -0.5, -0.4], [0.0, 0.5, 0.6]], dtype=torch.float32) # 40000 & 240000 front high new
+# pcd_shift_base = (pcd_bounds_base[0] + pcd_bounds_base[1]) / 2 # Shift to center, half of sum should be in the center
+# pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0] # Should be equal to 1.0. Resize to fit in the range, difference between max and min should be the size of the range, and the point cloud will be normalized to fit in a unit cube of size 1x1x1 after this resizing.
 
 # pcd_bounds_base=torch.tensor([[-1.0, -0.5, -0.5], [0.0, 0.5, 0.5]], dtype=torch.float32) # 40000 & 240000 front low new
 # pcd_shift_base = (pcd_bounds_base[0] + pcd_bounds_base[1]) / 2 # Shift to center, half of sum should be in the center
 # pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0] # Should be equal to 1.0. Resize to fit in the range, difference between max and min should be the size of the range, and the point cloud will be normalized to fit in a unit cube of size 1x1x1 after this resizing.
 
-
+# pcd_bounds_base=torch.tensor([[-0.95, -0.5, -0.399], [0.05, 0.5, 0.601]], dtype=torch.float32) # 40000 front high 20260324
+pcd_bounds_base=torch.tensor([[-1.2, -0.5, -0.399], [-0.2, 0.5, 0.601]], dtype=torch.float32) # 40000 front distant high 20260402
+pcd_shift_base = (pcd_bounds_base[0] + pcd_bounds_base[1]) / 2 
+pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0]
 
 pcd_base_processed_torch = (pcd_base_torch.view(-1, 3) - pcd_shift_base) / pcd_resize_base
 
@@ -48,9 +56,13 @@ pcd_base_processed_torch = (pcd_base_torch.view(-1, 3) - pcd_shift_base) / pcd_r
 #                                          (pcd_base_processed_torch[:, 1] > -1.5) & (pcd_base_processed_torch[:, 1] < -0.5) &
 #                                          (pcd_base_processed_torch[:, 2] > -0.05) & (pcd_base_processed_torch[:, 2] < 0.5)] # 40000 & 240000 high
 
-pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -1.5) & (pcd_base_processed_torch[:, 0] < 1.5) &
-                                         (pcd_base_processed_torch[:, 1] > -0.5) & (pcd_base_processed_torch[:, 1] < 0.5) &
-                                         (pcd_base_processed_torch[:, 2] > -0.01) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high & new, with bounds
+# pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.5) & (pcd_base_processed_torch[:, 0] < 0.5) &
+#                                          (pcd_base_processed_torch[:, 1] > -0.5) & (pcd_base_processed_torch[:, 1] < 0.5) &
+#                                          (pcd_base_processed_torch[:, 2] > 0.0) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high 20260324, with bounds
+
+pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.15) & (pcd_base_processed_torch[:, 0] < 0.5) &
+                                         (pcd_base_processed_torch[:, 1] > -0.25) & (pcd_base_processed_torch[:, 1] < 0.25) &
+                                         (pcd_base_processed_torch[:, 2] > 0.0) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high distant 20260402, with bounds
 
 # pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -1.0) & (pcd_base_processed_torch[:, 0] < 0.5) &
 #                                          (pcd_base_processed_torch[:, 1] > -0.5) & (pcd_base_processed_torch[:, 1] < 0.5) &
