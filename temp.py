@@ -11,10 +11,10 @@ import numpy as np
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1772719274_623702016.pt") # 40000 front low
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1774369660_729328128.pt") # 40000 front high 20260324
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775134583_411764992.pt") # 40000 front distant high 2026402 1: rotated
-# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135733_593223936.pt") # 40000 front distant high 2026402 2: horizontal
+pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135733_593223936.pt") # 40000 front distant high 2026402 2: horizontal
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135987_676135936.pt") # 40000 front distant high 2026402 3: vertical
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136907_450576896.pt") # 40000 front distant high 2026402 4: vertical pose2
-pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136991_594053120.pt") # 40000 front distant high 2026402 5: rotated pose2
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136991_594053120.pt") # 40000 front distant high 2026402 5: rotated pose2
 print(pcd_base_torch.shape)
 
 # Base 2
@@ -23,8 +23,8 @@ print(pcd_base_torch.shape)
 # axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1, origin=[0, 0, 0])
 
 # # vvvvvvvvvvvvvvvvvvvvv
-# o3d.visualization.draw_plotly([pcd_base, axis])
-# # o3d.visualization.draw_geometries([pcd_base, axis])
+# # o3d.visualization.draw_plotly([pcd_base, axis])
+# o3d.visualization.draw_geometries([pcd_base, axis])
 
 # Base 3
 # [[x1, y1, z1], [x2, y2, z2]] where (x1, y1, z1) is the minimum corner and (x2, y2, z2) is the maximum corner of the bounding box that we want to fit our point cloud into. 
