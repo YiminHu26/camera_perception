@@ -17,7 +17,7 @@ pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0]
 pcd_base_processed_torch = (pcd_base_torch.view(-1, 3) - pcd_shift_base) / pcd_resize_base
 
 pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.15) & (pcd_base_processed_torch[:, 0] < 0.5) &
-                                         (pcd_base_processed_torch[:, 1] > -0.2) & (pcd_base_processed_torch[:, 1] < 0.25) &
+                                         (pcd_base_processed_torch[:, 1] > -0.2) & (pcd_base_processed_torch[:, 1] < 0.3) &
                                          (pcd_base_processed_torch[:, 2] > 0.0) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high distant 20260402, with bounds
 
 pcd_base_numpy = pcd_base_crop.numpy().reshape(-1, 3) # After processing with shift and resize

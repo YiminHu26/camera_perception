@@ -13,10 +13,10 @@ from tf_transformations import quaternion_from_matrix, translation_from_matrix, 
 
 
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775134583_411764992.pt") # 40000 front distant high 2026402 1: rotated
-pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135733_593223936.pt") # * 40000 front distant high 2026402 2: horizontal
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135733_593223936.pt") # * 40000 front distant high 2026402 2: horizontal
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135987_676135936.pt") # 40000 front distant high 2026402 3: vertical
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136907_450576896.pt") # * 40000 front distant high 2026402 4: vertical pose2
-# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136991_594053120.pt") # 40000 front distant high 2026402 5: rotated pose2
+pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136991_594053120.pt") # 40000 front distant high 2026402 5: rotated pose2
 print(pcd_base_torch.shape)
 
 pcd_bounds_base=torch.tensor([[-1.2, -0.5, -0.399], [-0.2, 0.5, 0.601]], dtype=torch.float32) # 40000 front distant high 20260402
@@ -26,7 +26,7 @@ pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0]
 pcd_base_processed_torch = (pcd_base_torch.view(-1, 3) - pcd_shift_base) / pcd_resize_base
 
 pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.15) & (pcd_base_processed_torch[:, 0] < 0.5) &
-                                         (pcd_base_processed_torch[:, 1] > -0.2) & (pcd_base_processed_torch[:, 1] < 0.25) &
+                                         (pcd_base_processed_torch[:, 1] > -0.2) & (pcd_base_processed_torch[:, 1] < 0.2) &
                                          (pcd_base_processed_torch[:, 2] > 0.0) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high distant 20260402, with bounds
 
 pcd_base_numpy = pcd_base_crop.numpy().reshape(-1, 3) # After processing with shift and resize
@@ -146,6 +146,8 @@ vmf_input_pcd_base_1775134583_411764992.pt
  [ 0.82883596  0.5535591  -0.08126085  0.04169851]
  [-0.01444379 -0.12402181 -0.9921744   0.02583791]
  [ 0.          0.          0.          1.        ]]
+Predicted translation: [-0.69851017  0.04169851  0.12683791], quaternion: (-0.4688576731181075, -0.8810559937936515, 0.05824903781215444, 0.02280060859963066)
+
  NOW: ^agv_table T_grasp, ^base T_agv_table
  TODO: search for ^cog T_grasp = ^cog T_base @ ^base T_agv_table @ ^agv_table T_grasp
 ======================================================
@@ -255,13 +257,14 @@ o3d.visualization.draw_geometries(obbs +
                                   [pcd_o3d_base, 
                                    axis_agv, 
                                    axis_base, 
-                                #    obb_center_marker, 
-                                #    obb_pose, 
+                                   obb_center_marker, 
+                                   obb_pose, 
                                    cog_marker, 
                                    axis_cog, 
-                                   placement_center, 
-                                   plane, 
-                                   grasp_center,
-                                   grasp_center_marker,
-                                   place_center,
-                                   place_center_marker,])
+                                #    placement_center, 
+                                #    plane, 
+                                #    grasp_center,
+                                #    grasp_center_marker,
+                                #    place_center,
+                                #    place_center_marker,
+                                ])
