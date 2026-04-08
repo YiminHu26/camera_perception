@@ -3,17 +3,19 @@ import open3d as o3d
 import torch
 import numpy as np
 
-from scipy.spatial.transform import Rotation as R
+# Compatibility shim for deps that still reference np.float (removed in NumPy 1.24).
+if not hasattr(np, "float"):
+    np.float = float  # type: ignore[attr-defined]
 from tf_transformations import quaternion_from_matrix, translation_from_matrix, quaternion_matrix
 
 
 
 
 
-pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775134583_411764992.pt") # 40000 front distant high 2026402 1: rotated
-# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135733_593223936.pt") # 40000 front distant high 2026402 2: horizontal
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775134583_411764992.pt") # 40000 front distant high 2026402 1: rotated
+pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135733_593223936.pt") # * 40000 front distant high 2026402 2: horizontal
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135987_676135936.pt") # 40000 front distant high 2026402 3: vertical
-# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136907_450576896.pt") # 40000 front distant high 2026402 4: vertical pose2
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136907_450576896.pt") # * 40000 front distant high 2026402 4: vertical pose2
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136991_594053120.pt") # 40000 front distant high 2026402 5: rotated pose2
 print(pcd_base_torch.shape)
 
@@ -148,10 +150,10 @@ vmf_input_pcd_base_1775134583_411764992.pt
  TODO: search for ^cog T_grasp = ^cog T_base @ ^base T_agv_table @ ^agv_table T_grasp
 ======================================================
 '''
-grasp_pose = np.array([[-0.55930525,  0.8235235,  -0.09479824,  0.00148981],
-                       [0.82883596,  0.5535591,  -0.08126085,  0.04169851],
-                       [-0.01444379, -0.12402181, -0.9921744,   0.02583791],
-                       [0.         ,  0.         ,  0.         ,  1        ]])
+# grasp_pose = np.array([[-0.55930525,  0.8235235,  -0.09479824,  0.00148981],
+#                        [0.82883596,  0.5535591,  -0.08126085,  0.04169851],
+#                        [-0.01444379, -0.12402181, -0.9921744,   0.02583791],
+#                        [0.         ,  0.         ,  0.         ,  1        ]])
 
 
 
@@ -166,7 +168,10 @@ Predicted translation: [-0.68518066  0.02828353  0.14272907], quaternion: (-0.98
 
 ======================================================
 '''
-
+grasp_pose = np.array([[ 0.93696624, -0.3372127,  -0.09155258,  0.01481934],
+                       [-0.32006037, -0.9333838,   0.16234529,  0.02828353],
+                       [-0.1401986,  -0.1228097,  -0.98247755,  0.04172907],
+                       [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
 
 
@@ -180,7 +185,10 @@ vmf_input_pcd_base_1775136907_450576896.pt
 Predicted translation: [-0.5652976   0.03119325  0.16997387], quaternion: (0.7657156881957456, -0.44882127438196817, -0.39393985599322934, 0.23885212658273647)
 ======================================================
 '''
-
+# grasp_pose = np.array([[ 0.28674173, -0.49915227, -0.8176957,   0.13470241],
+#                        [-0.8755258,  -0.48301828, -0.01216848,  0.03119325],
+#                        [-0.38888803,  0.71940285, -0.5755221,   0.06897386],
+#                        [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
 # =======================================================
 agv_T_grasp = grasp_pose
@@ -227,8 +235,9 @@ grasp_center.translate(grasp_center_translation)
 
 place_pose_quat = quaternion_from_matrix(agv_T_place)
 place_pose_translation = translation_from_matrix(agv_T_place)
-R_y_90 = o3d.geometry.get_rotation_matrix_from_xyz((0.0, np.deg2rad(90.0), 0.0))
-place_pose_rot = quaternion_matrix(place_pose_quat)[:3, :3] @ R_y_90
+# R_y_90 = o3d.geometry.get_rotation_matrix_from_xyz((0.0, np.deg2rad(90.0), 0.0))
+# place_pose_rot = quaternion_matrix(place_pose_quat)[:3, :3] @ R_y_90
+place_pose_rot = quaternion_matrix(place_pose_quat)[:3, :3]
 
 place_center_marker = o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
 place_center_marker.paint_uniform_color((0.5, 1.0, 0.5))  # light green
@@ -246,8 +255,8 @@ o3d.visualization.draw_geometries(obbs +
                                   [pcd_o3d_base, 
                                    axis_agv, 
                                    axis_base, 
-                                   obb_center_marker, 
-                                   obb_pose, 
+                                #    obb_center_marker, 
+                                #    obb_pose, 
                                    cog_marker, 
                                    axis_cog, 
                                    placement_center, 
