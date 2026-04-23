@@ -8,6 +8,108 @@ if not hasattr(np, "float"):
     np.float = float  # type: ignore[attr-defined]
 from tf_transformations import quaternion_from_matrix, translation_from_matrix, quaternion_matrix
 
+'''
+This denoising function applies both statistical outlier removal and radius outlier removal to the input point cloud.
+- nb_neighbors: The number of neighbors to analyze for each point in the statistical outlier removal step. 
+                [The higher, the more aggressive the denoising.]
+- std_ratio:    The standard deviation ratio for the statistical outlier removal. 
+                Points that are farther than this ratio times the standard deviation from the mean distance to their neighbors will be considered outliers and removed.
+                [The smaller, the more aggressive the denoising.]
+- radius:       The radius for the radius outlier removal. 
+                Points that have fewer than min_points neighbors within this radius will be considered outliers and removed.
+                [The smaller, the more aggressive the denoising.]
+- min_points:   The minimum number of neighbors within the specified radius for a point to be considered an inlier. 
+                [The higher, the more aggressive the denoising.]
+
+- Some best practices for tuning these parameters:
+    - Start with a moderate nb_neighbors (e.g., 30) and std_ratio (e.g., 1.0) to remove obvious outliers without being too aggressive.
+    - Adjust nb_neighbors and std_ratio based on the density and noise level of your point cloud
+        - If you see too many points being removed, try increasing nb_neighbors(e.g. 40) or std_ratio (e.g. 1.5) or radius(e.g. 0.05).
+        - If you still see outliers, try decreasing nb_neighbors(e.g. 20) or std_ratio (e.g. 0.8) or min_points(e.g. 16).
+'''
+def denoise_point_cloud(
+    points_np: np.ndarray,
+    nb_neighbors: int = 30,
+    std_ratio: float = 1.0,
+    radius: float = 0.03,
+    min_points: int = 12,
+) -> tuple[np.ndarray, o3d.geometry.PointCloud]:
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(points_np)
+
+    pcd_stat, stat_inliers = pcd.remove_statistical_outlier(
+        nb_neighbors=nb_neighbors,
+        std_ratio=std_ratio,
+    )
+    pcd_radius, radius_inliers = pcd_stat.remove_radius_outlier(
+        nb_points=min_points,
+        radius=radius,
+    )
+
+    print(
+        f"Denoise: raw={len(points_np)}, "
+        f"after_stat={len(stat_inliers)}, after_radius={len(radius_inliers)}"
+    )
+    return np.asarray(pcd_radius.points), pcd_radius
+
+
+'''
+This function computes a constrained OBB pose where the Z-axis is aligned with the given world Z direction.
+
+The function first tries to find the longest axis of the OBB that is most orthogonal to the world Z direction to use as the X-axis. 
+If all axes are nearly parallel to the world Z, it defaults to using the global X-axis.
+
+Then, it checks the distribution of points along the chosen X-axis to determine if it should flip the X-axis direction for better alignment with the point cloud's geometry.
+(The higher end should be more likely to have points, so if the negative end has higher mean height, we flip the X-axis).
+
+Finally, it constructs the Y-axis as the cross product of the world Z and the chosen X-axis, and returns the center and the constrained rotation matrix.
+'''
+def compute_obb_pose_with_world_z(
+    obb: o3d.geometry.OrientedBoundingBox,
+    points_np: np.ndarray,
+    world_z: np.ndarray = np.array([0.0, 0.0, 1.0]),
+) -> tuple[np.ndarray, np.ndarray]:
+    center = np.asarray(obb.center)
+    rot = np.asarray(obb.R)
+    extent = np.asarray(obb.extent)
+
+    axis_order = np.argsort(extent)[::-1]
+    world_z = world_z / np.linalg.norm(world_z)
+
+    x_axis = None
+    for axis_idx in axis_order:
+        candidate = rot[:, axis_idx]
+        candidate = candidate - np.dot(candidate, world_z) * world_z
+        candidate_norm = np.linalg.norm(candidate)
+        if candidate_norm > 1e-8:
+            x_axis = candidate / candidate_norm
+            break
+
+    if x_axis is None:
+        x_axis = np.array([1.0, 0.0, 0.0])
+
+    centered_points = points_np - center
+    points_along_x = centered_points @ x_axis
+    span_along_x = np.max(np.abs(points_along_x))
+
+    if span_along_x > 1e-8:
+        end_band_threshold = 0.6 * span_along_x
+        pos_end_points = points_np[points_along_x >= end_band_threshold]
+        neg_end_points = points_np[points_along_x <= -end_band_threshold]
+
+        if len(pos_end_points) > 0 and len(neg_end_points) > 0:
+            pos_mean_height = np.mean(pos_end_points[:, 2])
+            neg_mean_height = np.mean(neg_end_points[:, 2])
+            if neg_mean_height > pos_mean_height:
+                x_axis = -x_axis
+
+    y_axis = np.cross(world_z, x_axis)
+    y_axis /= np.linalg.norm(y_axis)
+    z_axis = world_z
+
+    constrained_rot = np.column_stack((x_axis, y_axis, z_axis))
+    return center, constrained_rot
+
 
 def compute_obb_pose_with_world_z(
     obb: o3d.geometry.OrientedBoundingBox,
@@ -64,7 +166,15 @@ def compute_obb_pose_with_world_z(
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135733_593223936.pt") # * 40000 front distant high 2026402 2: horizontal
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775135987_676135936.pt") # 40000 front distant high 2026402 3: vertical
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136907_450576896.pt") # * 40000 front distant high 2026402 4: vertical pose2
-pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136991_594053120.pt") # 40000 front distant high 2026402 5: rotated pose2
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775136991_594053120.pt") # 40000 front distant high 2026402 5: rotated pose2
+
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775749844_421216000.pt") # 40000 front distant foam high 20260409 1: rotated pose1
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775749900_943611904.pt") # 40000 front distant foam high 20260409 2: vertical pose1
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775750015_554792960.pt") # 40000 front distant foam high 20260409 3: rotated pose2
+pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775750069_704584960.pt") # 40000 front distant foam high 20260409 4: rotated pose3
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775750106_360350976.pt") # 40000 front distant foam high 20260409 5: rotated pose4
+# pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775750147_858706944.pt") # 40000 front distant foam high 20260409 6: horizontal pose1
+
 print(pcd_base_torch.shape)
 
 pcd_bounds_base=torch.tensor([[-1.2, -0.5, -0.399], [-0.2, 0.5, 0.601]], dtype=torch.float32) # 40000 front distant high 20260402
@@ -73,15 +183,26 @@ pcd_resize_base = pcd_bounds_base[1] - pcd_bounds_base[0]
 
 pcd_base_processed_torch = (pcd_base_torch.view(-1, 3) - pcd_shift_base) / pcd_resize_base
 
+# pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.15) & (pcd_base_processed_torch[:, 0] < 0.5) &
+#                                          (pcd_base_processed_torch[:, 1] > -0.2) & (pcd_base_processed_torch[:, 1] < 0.2) &
+#                                          (pcd_base_processed_torch[:, 2] > 0.0) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high distant 20260402, with bounds
+
 pcd_base_crop = pcd_base_processed_torch[(pcd_base_processed_torch[:, 0] > -0.15) & (pcd_base_processed_torch[:, 0] < 0.5) &
-                                         (pcd_base_processed_torch[:, 1] > -0.2) & (pcd_base_processed_torch[:, 1] < 0.2) &
-                                         (pcd_base_processed_torch[:, 2] > 0.0) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high distant 20260402, with bounds
+                                         (pcd_base_processed_torch[:, 1] > -0.2) & (pcd_base_processed_torch[:, 1] < 0.3) &
+                                         (pcd_base_processed_torch[:, 2] > 0.03) & (pcd_base_processed_torch[:, 2] < 0.3)] # 40000 front high distant foam 20260409, with bounds
+
 
 pcd_base_numpy = pcd_base_crop.numpy().reshape(-1, 3) # After processing with shift and resize
+pcd_base_numpy, pcd_o3d_base = denoise_point_cloud(
+    pcd_base_numpy,
+    nb_neighbors=30,
+    std_ratio=1.0,
+    radius=0.03,
+    min_points=12,
+)
 
 # Create an Open3D PointCloud object
-pcd_o3d_base = o3d.geometry.PointCloud()
-pcd_o3d_base.points = o3d.utility.Vector3dVector(pcd_base_numpy)
+# The point cloud above has already been denoised and converted to Open3D.
 
 # Create a coordinate frame for better orientation in the visualization
 Rz_neg_90 = o3d.geometry.get_rotation_matrix_from_xyz((0, 0, np.deg2rad(-90)))
@@ -142,8 +263,7 @@ print(f"Volume is {obb.volume()} with PCA")
 # ==================================================
 
 # Visualization of the OBB center and orientation (axis_pose)
-obb_pose_center = np.asarray(obb.center)   # in base_link
-obb_pose_rot = np.asarray(obb.R)           # box orientation in base_link
+obb_pose_center, obb_pose_rot = compute_obb_pose_with_world_z(obb, pcd_base_numpy)
 
 
 obb_pose_center, obb_pose_rot = compute_obb_pose_with_world_z(
