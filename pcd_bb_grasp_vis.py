@@ -9,7 +9,55 @@ if not hasattr(np, "float"):
 from tf_transformations import quaternion_from_matrix, translation_from_matrix, quaternion_matrix
 
 
+def compute_obb_pose_with_world_z(
+    obb: o3d.geometry.OrientedBoundingBox,
+    points_np: np.ndarray,
+    world_z: np.ndarray = np.array([0.0, 0.0, 1.0]),
+) -> tuple[np.ndarray, np.ndarray]:
+    center = np.asarray(obb.center)
+    rot = np.asarray(obb.R)
+    extent = np.asarray(obb.extent)
 
+    axis_order = np.argsort(extent)[::-1]
+    world_z = world_z / np.linalg.norm(world_z)
+
+    x_axis = None
+    for axis_idx in axis_order:
+        candidate = rot[:, axis_idx]
+        candidate = candidate - np.dot(candidate, world_z) * world_z
+        candidate_norm = np.linalg.norm(candidate)
+        if candidate_norm > 1e-8:
+            x_axis = candidate / candidate_norm
+            break
+
+    if x_axis is None:
+        x_axis = np.array([1.0, 0.0, 0.0])
+
+    centered_points = points_np - center
+    points_along_x = centered_points @ x_axis
+    span_along_x = np.max(np.abs(points_along_x))
+
+    if span_along_x > 1e-8:
+        end_band_threshold = 0.6 * span_along_x
+        pos_end_points = points_np[points_along_x >= end_band_threshold]
+        neg_end_points = points_np[points_along_x <= -end_band_threshold]
+
+        if len(pos_end_points) > 0 and len(neg_end_points) > 0:
+            pos_mean_height = np.mean(pos_end_points[:, 2])
+            neg_mean_height = np.mean(neg_end_points[:, 2])
+            if neg_mean_height > pos_mean_height:
+                x_axis = -x_axis
+
+    y_axis = np.cross(world_z, x_axis)
+    y_axis_norm = np.linalg.norm(y_axis)
+    if y_axis_norm <= 1e-8:
+        y_axis = np.array([0.0, 1.0, 0.0])
+    else:
+        y_axis /= y_axis_norm
+    z_axis = world_z
+
+    constrained_rot = np.column_stack((x_axis, y_axis, z_axis))
+    return center, constrained_rot
 
 
 # pcd_base_torch = torch.load(f="vmf_input_pcd_base_1775134583_411764992.pt") # 40000 front distant high 2026402 1: rotated
@@ -97,12 +145,22 @@ print(f"Volume is {obb.volume()} with PCA")
 obb_pose_center = np.asarray(obb.center)   # in base_link
 obb_pose_rot = np.asarray(obb.R)           # box orientation in base_link
 
-obb_center_marker = o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
-obb_center_marker.paint_uniform_color((0.5, 0.5, 1.0))  # Purple-ish
-obb_center_marker.translate(obb_pose_center)
+
+obb_pose_center, obb_pose_rot = compute_obb_pose_with_world_z(
+            obb,
+            pcd_base_numpy,
+        )
+
 obb_pose = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.08, origin=[0, 0, 0])
 obb_pose.rotate(obb_pose_rot, center=(0, 0, 0))
 obb_pose.translate(obb_pose_center)
+
+obb_center_marker = o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
+obb_center_marker.paint_uniform_color((0.5, 0.5, 1.0))  # Purple-ish
+obb_center_marker.translate(obb_pose_center)
+# obb_pose = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.08, origin=[0, 0, 0])
+# obb_pose.rotate(obb_pose_rot, center=(0, 0, 0))
+# obb_pose.translate(obb_pose_center)
 print(f"Bounding Box center: {obb_pose_center}")
 
 # Center of gravity (centroid) of the point cloud
@@ -261,10 +319,10 @@ o3d.visualization.draw_geometries(obbs +
                                    obb_pose, 
                                    cog_marker, 
                                    axis_cog, 
-                                #    placement_center, 
-                                #    plane, 
-                                #    grasp_center,
-                                #    grasp_center_marker,
-                                #    place_center,
-                                #    place_center_marker,
+                                   placement_center, 
+                                   plane, 
+                                   grasp_center,
+                                   grasp_center_marker,
+                                   place_center,
+                                   place_center_marker,
                                 ])
